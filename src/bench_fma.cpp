@@ -1,11 +1,9 @@
-#include <Eigen/Core>
-
 #include <benchmark/benchmark.h>
 
 #include <cmath>
 #include <cstdint>
 
-#pragma STDC FP_CONTRACT DEFAULT
+// #pragma STDC FP_CONTRACT DEFAULT
 
 namespace {
 
@@ -39,43 +37,6 @@ struct TwoExprs {
     }
 };
 
-struct alignas(16) Vec {
-    double x_, y_;
-
-    double& x()
-    {
-	return x_;
-    }
-    const double& x() const
-    {
-	return x_;
-    }
-    double& y()
-    {
-	return y_;
-    }
-    const double& y() const
-    {
-	return y_;
-    }
-};
-
-struct VecOneExpr : public Vec {
-    double dot(const Vec& o) const
-    {
-        return x_ * o.x_ + y_ * o.y_;
-    }
-};
-
-struct VecMultExpr : public Vec {
-    double dot(const Vec& o) const
-    {
-        const auto px = x_ * o.x_;
-        const auto py = y_ * o.y_;
-        return px + py;
-    }
-};
-
 template <class MADD>
 double
 eval(const std::vector<double>& coeffs, double x)
@@ -89,6 +50,7 @@ eval(const std::vector<double>& coeffs, double x)
     return v;
 };
 
+// specialised for N to allow fully unrolling loops
 template <class MADD, int N>
 double
 evalN(const double* coeffs, double x)
@@ -109,7 +71,6 @@ void BM_Horner_N(benchmark::State& state)
     for (auto _ : state) {
         x += 1e-10;
         benchmark::DoNotOptimize(evalN<MADD, N>(c.data(), x));
-        // benchmark::DoNotOptimize(eval<MADD>(c, x));
     }
 }
 
@@ -134,32 +95,6 @@ void BM_Horner(benchmark::State& state)
     BM_Horner_UpTo<MADD, 20>(state);
 }
 
-template <class V>
-void BM_dot(benchmark::State& state)
-{
-    static constexpr std::size_t N = 256;
-
-    std::vector<std::pair<V, V>> data;
-    {
-        V v1 { -0.3, 100.1 };
-        V v2 { 1e6, 1e6 / 3 };
-
-        while (data.size() < N) {
-            v1.x() = std::nextafter(v1.x(), 0.0);
-            v2.x() = std::nextafter(v2.x(), 0.0);
-            v1.y() = std::nextafter(v1.y(), 0.0);
-            v2.y() = std::nextafter(v2.y(), 0.0);
-            data.emplace_back(v1, v2);
-        }
-    }
-
-    for (auto _ : state) {
-        for (std::size_t i = 0; i < N; ++i) {
-            const auto& [v1, v2] = data[i];
-            benchmark::DoNotOptimize(v1.dot(v2));
-        }
-    }
-}
 
 } // namespace
 
@@ -172,9 +107,5 @@ BENCHMARK(BM_Horner<ForcedFMA>)
     ->Arg(16);
 BENCHMARK(BM_Horner<OneExpr>)->Arg(1)->Arg(2)->Arg(3)->Arg(4)->Arg(8)->Arg(16);
 BENCHMARK(BM_Horner<TwoExprs>)->Arg(1)->Arg(2)->Arg(3)->Arg(4)->Arg(8)->Arg(16);
-
-BENCHMARK(BM_dot<VecOneExpr>);
-BENCHMARK(BM_dot<VecMultExpr>);
-BENCHMARK(BM_dot<Eigen::Vector2d>);
 
 BENCHMARK_MAIN();

@@ -12,25 +12,21 @@ FetchContent_Declare(
   GIT_TAG v1.8.3
   )
 
-FetchContent_Declare(
-  Eigen3
-  GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
-  GIT_TAG 3.4.0
-  )
-  
-add_compile_options(-Wall)
-#add_compile_options(-Werror)
-add_compile_options(-march=haswell)
+# add_compile_options(-Wall)
+# add_compile_options(-Werror)
 
-add_compile_options(-ffp-contract=on)
+# For x64 to use FMA
+# add_compile_options(-march=haswell)
+
+# values: off/on/fast
+# add_compile_options(-ffp-contract=on)
 
 set(BENCHMARK_ENABLE_TESTING OFF)
-FetchContent_MakeAvailable(benchmark Eigen3)
+FetchContent_MakeAvailable(benchmark)
 
 add_executable(bench-fma
   src/bench_fma.cpp)
 
 target_link_libraries(bench-fma
   benchmark::benchmark
-  Eigen3::Eigen
   )
