@@ -16,7 +16,7 @@ FetchContent_Declare(
 # add_compile_options(-Werror)
 
 # For x64 to use FMA
-# add_compile_options(-march=haswell)
+#add_compile_options(-march=haswell)
 
 # values: off/on/fast
 # add_compile_options(-ffp-contract=on)
@@ -25,7 +25,12 @@ set(BENCHMARK_ENABLE_TESTING OFF)
 FetchContent_MakeAvailable(benchmark)
 
 add_executable(bench-fma
+  src/madd.h
   src/bench_fma.cpp)
+
+add_executable(demo-fma
+  src/madd.h
+  src/test_fma.cpp)
 
 target_link_libraries(bench-fma
   benchmark::benchmark

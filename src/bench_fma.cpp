@@ -1,7 +1,9 @@
+#include "madd.h"
+
 #include <benchmark/benchmark.h>
 
-#include <cmath>
 #include <cstdint>
+#include <vector>
 
 // #pragma STDC FP_CONTRACT DEFAULT
 
@@ -20,22 +22,6 @@ expCoeffs(std::size_t N)
     }
     return coeffs;
 }
-
-struct ForcedFMA {
-    double operator()(double x, double y, double a) { return std::fma(x, y, a); }
-};
-
-struct OneExpr {
-    double operator()(double x, double y, double a) { return x * y + a; }
-};
-
-struct TwoExprs {
-    double operator()(double x, double y, double a)
-    {
-        const auto p = x * y;
-        return p + a;
-    }
-};
 
 template <class MADD>
 double
@@ -64,14 +50,14 @@ void BM_Horner(benchmark::State& state)
 
 } // namespace
 
-BENCHMARK(BM_Horner<ForcedFMA>)
+BENCHMARK(BM_Horner<madd::StdFMA>)
     ->Arg(1)
     ->Arg(2)
     ->Arg(3)
     ->Arg(4)
     ->Arg(8)
     ->Arg(16);
-BENCHMARK(BM_Horner<OneExpr>)->Arg(1)->Arg(2)->Arg(3)->Arg(4)->Arg(8)->Arg(16);
-BENCHMARK(BM_Horner<TwoExprs>)->Arg(1)->Arg(2)->Arg(3)->Arg(4)->Arg(8)->Arg(16);
+BENCHMARK(BM_Horner<madd::OneExprMAdd>)->Arg(1)->Arg(2)->Arg(3)->Arg(4)->Arg(8)->Arg(16);
+BENCHMARK(BM_Horner<madd::TwoExprMAdd>)->Arg(1)->Arg(2)->Arg(3)->Arg(4)->Arg(8)->Arg(16);
 
 BENCHMARK_MAIN();
