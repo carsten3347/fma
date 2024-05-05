@@ -50,51 +50,17 @@ eval(const std::vector<double>& coeffs, double x)
     return v;
 };
 
-// specialised for N to allow fully unrolling loops
-template <class MADD, int N>
-double
-evalN(const double* coeffs, double x)
+template <class MADD>
+void BM_Horner(benchmark::State& state)
 {
-    MADD madd {};
-
-    double v = coeffs[N];
-    for (auto i = N; i > 0; --i)
-        v = madd(x, v, coeffs[i - 1]);
-    return v;
-};
-
-template <class MADD, int N>
-void BM_Horner_N(benchmark::State& state)
-{
+    const int N = state.range(0);
     const auto c = expCoeffs(N);
     double x = -0.1;
     for (auto _ : state) {
         x += 1e-10;
-        benchmark::DoNotOptimize(evalN<MADD, N>(c.data(), x));
+        benchmark::DoNotOptimize(eval<MADD>(c, x));
     }
 }
-
-template <class MADD, int M>
-void BM_Horner_UpTo(benchmark::State& state)
-{
-    const int N = state.range(0);
-    if constexpr (M < 1) {
-        throw std::runtime_error("N < 1");
-    } else if (N > M) {
-        throw std::runtime_error("N too large");
-    } else if (N == M) {
-        BM_Horner_N<MADD, M>(state);
-    } else {
-        BM_Horner_UpTo<MADD, M - 1>(state);
-    }
-}
-
-template <class MADD>
-void BM_Horner(benchmark::State& state)
-{
-    BM_Horner_UpTo<MADD, 20>(state);
-}
-
 
 } // namespace
 
